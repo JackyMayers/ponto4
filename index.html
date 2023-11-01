@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>Controle de ponto HRD</title>
@@ -35,6 +35,7 @@
 
     <script>
         let dados = [];
+        let totalMinutosFaltantes = 0;
 
         function processarDados() {
             let id = document.getElementById("idInput").value;
@@ -100,7 +101,7 @@
                 resultado += `A meta de 7 horas foi batida. `;
             } else {
                 resultado += `A meta de 7 horas não foi batida. `;
-                calcularHorasFaltantes(totalHoras);
+                calcularHorasFaltantes(totalHoras, totalMinutosExatos);
             }
 
             if (atingiuMetaDias) {
@@ -117,9 +118,12 @@
             document.getElementById("resultado").innerHTML = resultado;
         }
 
-        function calcularHorasFaltantes(totalHoras) {
-            let horasFaltantes = 7 - totalHoras;
-            let resultText = `Faltam ${horasFaltantes} horas para atingir a meta de 7 horas na semana.`;
+        function calcularHorasFaltantes(totalHoras, totalMinutosExatos) {
+            let minutosFaltantes = 7 * 60 - (totalHoras * 60 + totalMinutosExatos);
+            let horasFaltantes = Math.floor(minutosFaltantes / 60);
+            let minutosRestantes = minutosFaltantes % 60;
+
+            let resultText = `Faltam ${horasFaltantes} horas e ${minutosRestantes} minutos para atingir a meta de 7 horas na semana.`;
             document.getElementById("horasFaltantes").innerHTML = resultText;
         }
 
