@@ -8,9 +8,6 @@
     <center>
     <b>
         <a href="https://jackymayers.github.io/farmacia/"><font color="purple"> Farmacia</font></a>
-         <!--<a href="https://tairritadotio.github.io/ponto2/"><font color="red">Tempo e ajuste</font></a>
-        <a href="https://tairritadotio.github.io/ponto3/"><font color="maroon">Ajuste de ponto</font></a>
-        <a href="https://tairritadotio.github.io/ponto4/"><font color="darkorange">Calcular tempo de trabalho</font></a>-->
     </b>
     </center>
     <h2>Controle de ponto HRD</h2>
@@ -21,6 +18,15 @@
         Função: <input type="text" id="funcaoInput" placeholder="Digite a Função"> <br><br>
         <textarea id="dadosInput" placeholder="Cole os dados aqui no formato: DD/MM/AAAA - HH horas MM minutos"></textarea><br><br>
         <button type="button" onclick="processarDados()">Processar Dados</button><br><br>
+    </form>
+
+    <form id="formManual">
+        Data: <input type="text" id="dataManualInput" placeholder="DD/MM/AAAA"> <br><br>
+        Hora Entrada: <input type="number" id="horaEntradaInput" placeholder="HH"> 
+        Minuto Entrada: <input type="number" id="minutoEntradaInput" placeholder="MM"> <br><br>
+        Hora Saída: <input type="number" id="horaSaidaInput" placeholder="HH"> 
+        Minuto Saída: <input type="number" id="minutoSaidaInput" placeholder="MM"> <br><br>
+        <button type="button" onclick="adicionarManual()">Adicionar Manualmente</button><br><br>
     </form>
 
     <ul id="listaDados"></ul>
@@ -36,7 +42,6 @@
 
     <script>
         let dados = [];
-        let totalMinutosFaltantes = 0;
 
         function processarDados() {
             let id = document.getElementById("idInput").value;
@@ -48,6 +53,35 @@
                 return { id: id, nome: nome, funcao: funcao, dados: item };
             }));
             exibirDados();
+        }
+
+        function adicionarManual() {
+            let id = document.getElementById("idInput").value;
+            let nome = document.getElementById("nomeInput").value;
+            let funcao = document.getElementById("funcaoInput").value;
+            let data = document.getElementById("dataManualInput").value;
+            let horaEntrada = document.getElementById("horaEntradaInput").value;
+            let minutoEntrada = document.getElementById("minutoEntradaInput").value;
+            let horaSaida = document.getElementById("horaSaidaInput").value;
+            let minutoSaida = document.getElementById("minutoSaidaInput").value;
+
+            if (data && horaEntrada !== "" && minutoEntrada !== "" && horaSaida !== "" && minutoSaida !== "") {
+                let entrada = moment(`${data} ${horaEntrada}:${minutoEntrada}`, 'DD/MM/YYYY HH:mm');
+                let saida = moment(`${data} ${horaSaida}:${minutoSaida}`, 'DD/MM/YYYY HH:mm');
+                if (entrada.isValid() && saida.isValid() && saida.isAfter(entrada)) {
+                    let duracao = moment.duration(saida.diff(entrada));
+                    let horas = Math.floor(duracao.asHours());
+                    let minutos = duracao.minutes();
+                    let resultadoParcial = `${entrada.format('DD/MM/YY')} - ${horas} hora${horas !== 1 ? 's' : ''} ${minutos} minuto${minutos !== 1 ? 's' : ''}`;
+                    
+                    dados.push({ id: id, nome: nome, funcao: funcao, dados: resultadoParcial });
+                    exibirDados();
+                } else {
+                    alert("Por favor, verifique se a hora de entrada é antes da hora de saída e se os valores são válidos.");
+                }
+            } else {
+                alert("Por favor, preencha todos os campos para adicionar manualmente.");
+            }
         }
 
         function exibirDados() {
@@ -67,9 +101,9 @@
             dados.forEach(item => {
                 let partes = item.dados.split(' - ');
                 if (partes.length === 2) {
-                    let data = moment(partes[0], 'DD/MM/YYYY');
-                    if (data.isValid()) {
-                        diasTrabalhados.add(data.format('DD/MM/YYYY'));
+                    let data = moment(partes[0], 'DD/MM/YY').format('DD/MM/YYYY');
+                    if (moment(data, 'DD/MM/YYYY').isValid()) {
+                        diasTrabalhados.add(data);
                     }
 
                     let tempo = partes[1].split(' ');
@@ -129,32 +163,46 @@
         }
 
         function salvarEmBlocoDeNotas() {
-            let conteudo = `ID: ${document.getElementById("idInput").value}\n`;
-            conteudo += `Nome: ${document.getElementById("nomeInput").value}\n`;
-            conteudo += `Função: ${document.getElementById("funcaoInput").value}\n\n`;
-
+            let id = document.getElementById("idInput").value;
+            let nome = document.getElementById("nomeInput").value;
+            let funcao = document.getElementById("funcaoInput").value;
             let justificativa = document.getElementById("justificativaInput").value;
+
+            let conteudo = `ID: ${id}\n`;
+            conteudo += `Nome: ${nome}\n`;
+            conteudo += `Função: ${funcao}\n\n`;
+
             if (justificativa.trim() !== '') {
                 conteudo += `Justificativa: ${justificativa}\n\n`;
             }
 
-            conteudo += `Resultados: ${document.getElementById("resultado").innerText}\n`;
+            conteudo += "Resultados:\n";
+            conteudo += document.getElementById("resultado").innerHTML.trim().replace(/<br>/g, "\n") + "\n";
 
-            let horasFaltantes = document.getElementById("horasFaltantes").innerText;
-            conteudo += `Horas que faltam: ${horasFaltantes}\n`;
+            let horasFaltantes = document.getElementById("horasFaltantes").innerHTML.trim();
+            conteudo += `${horasFaltantes}\n\n`;
 
-            conteudo += `Dados:\n`;
+            conteudo += "Dados de Ponto:\n";
             dados.forEach(item => {
                 conteudo += `${item.dados}\n`;
             });
 
-            let blob = new Blob([conteudo], { type: 'text/plain' });
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.href = url;
-            a.download = `${document.getElementById("idInput").value}_${document.getElementById("nomeInput").value}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
+            // Salvando o conteúdo em um arquivo
+            let filename = `${id}_${nome}.txt`;
+            download(filename, conteudo);
+        }
+
+        function download(filename, conteudo) {
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(conteudo));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
         }
     </script>
     <center>
