@@ -34,6 +34,12 @@
         <button type="button" onclick="adicionarManual()">Adicionar Manualmente</button><br><br>
     </form>
 
+    <form id="formTempoManual">
+        Horas: <input type="number" id="horasManualInput" placeholder="Horas"> 
+        Minutos: <input type="number" id="minutosManualInput" placeholder="Minutos"> <br><br>
+        <button type="button" onclick="adicionarTempoManual()">Adicionar Tempo Manual</button><br><br>
+    </form>
+
     <ul id="listaDados"></ul>
 
     <button type="button" onclick="calcularResultados()">Calcular</button>
@@ -86,6 +92,24 @@
                 }
             } else {
                 alert("Por favor, preencha todos os campos para adicionar manualmente.");
+            }
+        }
+
+        function adicionarTempoManual() {
+            let id = document.getElementById("idInput").value;
+            let nome = document.getElementById("nomeInput").value;
+            let funcao = document.getElementById("funcaoInput").value;
+            let horasManual = document.getElementById("horasManualInput").value;
+            let minutosManual = document.getElementById("minutosManualInput").value;
+            let dataAtual = moment().format('DD/MM/YY');
+            
+            if (horasManual !== "" && minutosManual !== "") {
+                let resultadoParcial = `${dataAtual} - ${horasManual} hora${horasManual !== '1' ? 's' : ''} ${minutosManual} minuto${minutosManual !== '1' ? 's' : ''}`;
+                
+                dados.push({ id: id, nome: nome, funcao: funcao, dados: resultadoParcial });
+                exibirDados();
+            } else {
+                alert("Por favor, preencha os campos de horas e minutos.");
             }
         }
 
